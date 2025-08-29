@@ -21,6 +21,8 @@ jobs:
   terraform_infra_creation:
     runs-on: ubuntu-latest
     needs: docker_build_and_push
+    outputs:
+      web_app_name: ${{ steps.terraform.outputs.web_app_name }}
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
@@ -32,6 +34,8 @@ jobs:
         
       - name: Terraform Setup
         uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          terraform_wrapper: false
       
       - name: Terraform Directory Initialization
         working-directory: Terraform
@@ -45,7 +49,13 @@ jobs:
         working-directory: Terraform
         run: terraform validate
 
-      - name: Terraform Apply
+      - name: Terraform Destroy
         working-directory: Terraform
-        run: terraform apply -auto-approve
-    
+        run: terraform destroy -auto-approve
+
+      - name: Terraform Apply
+        id: terraform
+        working-directory: Terraform
+        run: |
+          terraform apply -auto-approve
+          echo "web_app_name=$(terraform output -raw web_app_name 2>/dev/null || echo 'my-dockerapp')" >> $GITHUB_OUTPUT
