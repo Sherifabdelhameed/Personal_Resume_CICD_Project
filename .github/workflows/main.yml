@@ -17,3 +17,37 @@ jobs:
 
       - name: Dockerhub Push
         run: docker push ${{ secrets.DOCKER_USERNAME }}/my-resume:latest
+        
+  terraform_infra_creation:
+    runs-on: ubuntu-latest
+    needs: docker_build_and_push
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          terraform_version: 2.0.3
+      
+      - name: Terraform Directory Initialization
+        working-directory: Terraform
+        run: terraform init
+
+      - name: Terraform Formatting
+        working-directory: Terraform
+        run: terraform fmt
+
+      - name: Terraform Validation
+        working-directory: Terraform
+        run: terraform validate
+
+      - name: Terraform Apply
+        working-directory: Terraform
+        run: terraform apply -auto-approve
+    
